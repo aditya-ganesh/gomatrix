@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"unicode/utf8"
 )
 
 var (
@@ -16,9 +15,19 @@ func randRange(min, max int) int {
 	return rand.Intn(max+1-min) + min
 }
 
+func makeRainDrop(minLength, maxLength int) string {
+	dropLength := randRange(minLength, maxLength)
+	raindrop := make([]rune, dropLength)
+
+	for i := range raindrop {
+		character := randRange(firstKana, lastKana)
+		raindrop[i] = rune(character)
+	}
+	return string(raindrop)
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	character := randRange(firstKana, lastKana)
-	printstring := utf8.AppendRune(nil, rune(character))
-	fmt.Printf(string(printstring))
+	raindrop := makeRainDrop(5, 8)
+	fmt.Println(raindrop)
 }
