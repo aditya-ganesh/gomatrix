@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"math/rand"
-	"os"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -14,7 +13,7 @@ var (
 	lastKana  = 0xFF9D
 )
 
-type raindrop struct {
+type Raindrop struct {
 	text string
 	x    int
 	y    int
@@ -24,7 +23,7 @@ func randRange(min, max int) int {
 	return rand.Intn(max+1-min) + min
 }
 
-func makeRainDrop(maxLength, screenWidth int) raindrop {
+func makeRainDrop(maxLength, screenWidth int) Raindrop {
 
 	dropLength := randRange(1, maxLength)
 	raindropString := make([]rune, dropLength)
@@ -34,10 +33,10 @@ func makeRainDrop(maxLength, screenWidth int) raindrop {
 		raindropString[i] = rune(character)
 	}
 
-	drop := raindrop{
+	drop := Raindrop{
 		string(raindropString),
 		rand.Intn(screenWidth),
-		0,
+		-rand.Intn(maxLength),
 	}
 	return (drop)
 }
@@ -61,57 +60,65 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
-	w, _ := s.Size()
-	interval := time.Duration(1e6*0.05) * time.Microsecond
-
-	quit := func() {
-		s.Fini()
-		os.Exit(0)
-	}
-
-	// Goroutine for refreshing the screen
-	refresh := func() {
-		time.Sleep(interval)
-		s.Show()
-		log.Printf("%s", time.Now())
-	}
-
-	// Event handler goroutine
-	event_handler := func() {
-		for {
-			// Update screen
-			s.Show()
-
-			// Poll event
-			ev := s.PollEvent()
-
-			// Process event
-			switch ev := ev.(type) {
-			case *tcell.EventResize:
-				s.Sync()
-				w, _ = s.Size()
-			case *tcell.EventKey:
-				if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
-					quit()
-				}
-			}
-		}
-	}
-
 	// Set default text style
 	defStyle := tcell.StyleDefault
 	s.SetStyle(defStyle)
 
-	raindrop := makeRainDrop(8, w)
-	log.Printf("%d x %d : %s", raindrop.x, raindrop.y, raindrop.text)
-	drawRaindrop(s, raindrop.x, raindrop.y, defStyle, raindrop.text)
+	w, h := s.Size()
+	interval := time.Duration(1e6*0.1) * time.Microsecond
 
-	raindrop = makeRainDrop(8, w)
-	drawRaindrop(s, raindrop.x, raindrop.y, defStyle, raindrop.text)
+	raindropCount := 10
+	var raindrops []Raindrop
 
-	// Clear screen
+	maxDropLength := 8
 
-	refresh()
-	event_handler()
+	for range raindropCount {
+		raindrop := makeRainDrop(maxDropLength, w)
+		raindrops = append(raindrops, raindrop)
+	}
+
+	quit := func() {
+		// You have to catch panics in a defer, clean up, and
+		// re-raise them - otherwise your application can
+		// die without leaving any diagnostic trace.
+		maybePanic := recover()
+		s.Fini()
+		if maybePanic != nil {
+			panic(maybePanic)
+		}
+	}
+	defer quit()
+
+	// Event handler goroutine
+
+	for {
+		s.Clear()
+		time.Sleep(interval)
+
+		for i := range raindropCount {
+
+			drawRaindrop(s, raindrops[i].x, raindrops[i].y, defStyle, raindrops[i].text)
+		}
+		s.Show()
+
+		for i := range len(raindrops) {
+			if raindrops[i].y > h {
+				raindrops[i].y = -rand.Intn(maxDropLength)
+			} else {
+				raindrops[i].y++
+			}
+		}
+
+		// Poll event
+		ev := s.PollEvent()
+
+		// Process event
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
+				quit()
+			}
+		}
+	}
 
 }
