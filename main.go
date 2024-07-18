@@ -36,13 +36,12 @@ func makeRainDrop(minLength, maxLength, screenWidth int) Raindrop {
 	}
 
 	x := rand.Intn(screenWidth)
-	len := rand.Intn(maxLength)
 
 	drop := Raindrop{
 		string(raindropString),
 		x,
-		-len,
-		len,
+		-randRange(2*dropLength, 10*dropLength),
+		dropLength,
 	}
 	return (drop)
 }
@@ -73,7 +72,7 @@ func main() {
 	w, h := s.Size()
 	interval := time.Duration(1e6*0.1) * time.Microsecond
 
-	raindropCount := 10
+	raindropCount := w / 4
 	var raindrops []Raindrop
 
 	maxDropLength := h / 2
@@ -110,8 +109,11 @@ func main() {
 			s.Show()
 
 			for i := range len(raindrops) {
+				// If a raindrop escapes the scene, spawn a new one in its place.
 				if raindrops[i].y > h {
-					raindrops[i].y = -(raindrops[i].len + 1)
+					raindrop := makeRainDrop(minDropLength, maxDropLength, w)
+					raindrops[i] = raindrop
+					// Otherwise just let it drop down the screen
 				} else {
 					raindrops[i].y++
 				}
@@ -141,20 +143,5 @@ func main() {
 
 		}
 	}
-
-	// // Poll event
-	// ev := s.PollEvent()
-
-	// // Process event
-	// switch ev := ev.(type) {
-	// case *tcell.EventKey:
-	// 	if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
-	// 		quit()
-	// 	}
-
-	// case *tcell.EventResize:
-	// 	s.Sync()
-	// case *tcell.EventTime
-	// }
 
 }
