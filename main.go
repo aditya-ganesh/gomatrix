@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -17,15 +18,16 @@ type Raindrop struct {
 	text string
 	x    int
 	y    int
+	len  int
 }
 
 func randRange(min, max int) int {
 	return rand.Intn(max+1-min) + min
 }
 
-func makeRainDrop(maxLength, screenWidth int) Raindrop {
+func makeRainDrop(minLength, maxLength, screenWidth int) Raindrop {
 
-	dropLength := randRange(1, maxLength)
+	dropLength := randRange(minLength, maxLength)
 	raindropString := make([]rune, dropLength)
 
 	for i := range raindropString {
@@ -33,10 +35,14 @@ func makeRainDrop(maxLength, screenWidth int) Raindrop {
 		raindropString[i] = rune(character)
 	}
 
+	x := rand.Intn(screenWidth)
+	len := rand.Intn(maxLength)
+
 	drop := Raindrop{
 		string(raindropString),
-		rand.Intn(screenWidth),
-		-rand.Intn(maxLength),
+		x,
+		-len,
+		len,
 	}
 	return (drop)
 }
@@ -70,10 +76,11 @@ func main() {
 	raindropCount := 10
 	var raindrops []Raindrop
 
-	maxDropLength := 8
+	maxDropLength := h / 2
+	minDropLength := h / 5
 
 	for range raindropCount {
-		raindrop := makeRainDrop(maxDropLength, w)
+		raindrop := makeRainDrop(minDropLength, maxDropLength, w)
 		raindrops = append(raindrops, raindrop)
 	}
 
@@ -86,39 +93,68 @@ func main() {
 		if maybePanic != nil {
 			panic(maybePanic)
 		}
+		os.Exit(0)
 	}
 	defer quit()
 
+	// Display handler goroutine
+	go func() {
+		for {
+			s.Clear()
+			time.Sleep(interval)
+
+			for i := range raindropCount {
+
+				drawRaindrop(s, raindrops[i].x, raindrops[i].y, defStyle, raindrops[i].text)
+			}
+			s.Show()
+
+			for i := range len(raindrops) {
+				if raindrops[i].y > h {
+					raindrops[i].y = -(raindrops[i].len + 1)
+				} else {
+					raindrops[i].y++
+				}
+			}
+		}
+	}()
+
 	// Event handler goroutine
+	eventChan := make(chan tcell.Event)
+	go func() {
+		for {
+			event := s.PollEvent()
+			eventChan <- event
+		}
+	}()
 
 	for {
-		s.Clear()
-		time.Sleep(interval)
-
-		for i := range raindropCount {
-
-			drawRaindrop(s, raindrops[i].x, raindrops[i].y, defStyle, raindrops[i].text)
-		}
-		s.Show()
-
-		for i := range len(raindrops) {
-			if raindrops[i].y > h {
-				raindrops[i].y = -rand.Intn(maxDropLength)
-			} else {
-				raindrops[i].y++
+		select {
+		case event := <-eventChan:
+			switch ev := event.(type) {
+			case *tcell.EventKey:
+				switch ev.Key() {
+				case tcell.KeyCtrlZ, tcell.KeyCtrlC:
+					quit()
+				}
 			}
-		}
 
-		// Poll event
-		ev := s.PollEvent()
-
-		// Process event
-		switch ev := ev.(type) {
-		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
-				quit()
-			}
 		}
 	}
+
+	// // Poll event
+	// ev := s.PollEvent()
+
+	// // Process event
+	// switch ev := ev.(type) {
+	// case *tcell.EventKey:
+	// 	if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
+	// 		quit()
+	// 	}
+
+	// case *tcell.EventResize:
+	// 	s.Sync()
+	// case *tcell.EventTime
+	// }
 
 }
