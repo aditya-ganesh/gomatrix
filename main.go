@@ -50,7 +50,16 @@ func makeRainDrop(minLength, maxLength, screenWidth int) Raindrop {
 func drawRaindrop(s tcell.Screen, x, y int, text string, style tcell.Style) {
 	row := y
 	col := x
-	for _, r := range text {
+	style = style.Dim(true)
+	for i, r := range text {
+
+		// TODO: Find a less horrid way of doing this
+		if i >= (8) {
+			style = style.Dim(false)
+		}
+		if i >= (len(text) - 4) {
+			style = style.Bold(true)
+		}
 		s.SetContent(col, row, r, nil, style)
 		row++
 	}
