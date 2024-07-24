@@ -2,6 +2,8 @@
 
 Yet another matrix rain implementation, this time in go (It's not even the [first one](https://github.com/GeertJohan/gomatrix), which has been used as a reference).
 
+![gomatrix](./gomatrix.png "gomatrix")
+
 ##
 
 Command line args
