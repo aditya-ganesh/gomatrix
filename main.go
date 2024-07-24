@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"math/rand"
 	"os"
@@ -46,7 +47,7 @@ func makeRainDrop(minLength, maxLength, screenWidth int) Raindrop {
 	return (drop)
 }
 
-func drawRaindrop(s tcell.Screen, x, y int, style tcell.Style, text string) {
+func drawRaindrop(s tcell.Screen, x, y int, text string, style tcell.Style) {
 	row := y
 	col := x
 	for _, r := range text {
@@ -57,6 +58,15 @@ func drawRaindrop(s tcell.Screen, x, y int, style tcell.Style, text string) {
 
 func main() {
 
+	// Process command line flags
+	var maxLen = flag.Float64("max", 0.5, "Maximum drop length")
+	var minLen = flag.Float64("min", 0.2, "Minimum drop length")
+	var refresh = flag.Float64("r", 0.1, "Refresh interval in seconds")
+	var colour = flag.String("c", "", "Raindrop colour")
+
+	flag.Parse()
+
+	// Start a new TCell screen
 	s, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatalf("%+v", err)
@@ -67,16 +77,26 @@ func main() {
 
 	// Set default text style
 	defStyle := tcell.StyleDefault
+
+	if *colour != "" {
+		tcellColour := tcell.GetColor(*colour)
+		defStyle = defStyle.Foreground(tcellColour)
+	}
 	s.SetStyle(defStyle)
 
+	// Get the screen size to calculate raindrop properties
 	w, h := s.Size()
-	interval := time.Duration(1e6*0.1) * time.Microsecond
 
-	raindropCount := w / 4
+	// Define a refresh interval for screen painting
+	interval := time.Duration(1e6**refresh) * time.Microsecond
+
+	// TODO : Make these parameterizable
+
+	maxDropLength := int(float64(h) * *maxLen)
+	minDropLength := int(float64(h) * *minLen)
+
+	raindropCount := w
 	var raindrops []Raindrop
-
-	maxDropLength := h / 2
-	minDropLength := h / 5
 
 	for range raindropCount {
 		raindrop := makeRainDrop(minDropLength, maxDropLength, w)
@@ -104,7 +124,7 @@ func main() {
 
 			for i := range raindropCount {
 
-				drawRaindrop(s, raindrops[i].x, raindrops[i].y, defStyle, raindrops[i].text)
+				drawRaindrop(s, raindrops[i].x, raindrops[i].y, raindrops[i].text, defStyle)
 			}
 			s.Show()
 
