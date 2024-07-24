@@ -14,3 +14,4 @@ Command line args
 | min      | float64  | 0.2         | Minimum raindrop size given as a fraction of the screen height                                                                                                           |
 | max      | float64  | 0.5         | Maximum raindrop size given as a fraction of the screen height                                                                                                           |
 | r        | float64  | 0.1         | Refresh interval in seconds                                                                                                                                              |
+| d        | float64  | 0.75        | Raindrop density as a fraction of screen width                                                                                                                           |

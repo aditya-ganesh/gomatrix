@@ -70,6 +70,7 @@ func main() {
 	// Process command line flags
 	var maxLen = flag.Float64("max", 0.5, "Maximum drop length")
 	var minLen = flag.Float64("min", 0.2, "Minimum drop length")
+	var density = flag.Float64("d", 0.75, "Raindrop density")
 	var refresh = flag.Float64("r", 0.1, "Refresh interval in seconds")
 	var colour = flag.String("c", "", "Raindrop colour")
 
@@ -104,7 +105,7 @@ func main() {
 	maxDropLength := int(float64(h) * *maxLen)
 	minDropLength := int(float64(h) * *minLen)
 
-	raindropCount := w
+	raindropCount := int(float64(w) * *density)
 	var raindrops []Raindrop
 
 	for range raindropCount {
